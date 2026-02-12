@@ -1,3 +1,5 @@
+require("dotenv").config();
+client.login(process.env.TOKEN);
 const {
 Client,
 GatewayIntentBits,
@@ -191,5 +193,4 @@ const executor = entry.executor;
 banLog(ban.guild, `🔨 ${executor.tag} ban attı → ${ban.user.tag}`);
 });
 
-require("dotenv").config();
-client.login(process.env.TOKEN);
+
