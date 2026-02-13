@@ -35,18 +35,34 @@ const SAFE_ROLE_ID = "1470171744156516462";
 
 /* ================= READY ================= */
 
-client.once("ready", () => {
+client.once("ready", async () => {
 console.log(`Bot aktif: ${client.user.tag}`);
 
-const guild = client.guilds.cache.first();
-const channel = guild.channels.cache.get(VOICE_CHANNEL_ID);
+client.user.setPresence({
+activities: [{ name: ".gg/İmperium" }],
+status: "online"
+});
 
-if (channel) {
+const guild = client.guilds.cache.first();
+if (!guild) return;
+
+const channel = guild.channels.cache.get("SES_KANAL_ID"); // buraya ses kanal ID
+
+if (!channel) {
+console.log("Ses kanalı bulunamadı.");
+return;
+}
+
+try {
 joinVoiceChannel({
 channelId: channel.id,
 guildId: guild.id,
-adapterCreator: guild.voiceAdapterCreator
+adapterCreator: guild.voiceAdapterCreator,
+selfDeaf: true
 });
+console.log("Ses kanalına bağlandı.");
+} catch (err) {
+console.log("Ses bağlantı hatası:", err);
 }
 });
 
@@ -132,3 +148,11 @@ deleteLimit.delete(executor.id);
 /* ================= TOKEN ================= */
 
 client.login(process.env.TOKEN);
+
+process.on("unhandledRejection", err => {
+console.log("Unhandled Promise Rejection:", err);
+});
+
+process.on("uncaughtException", err => {
+console.log("Uncaught Exception:", err);
+});
