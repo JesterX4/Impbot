@@ -62,24 +62,6 @@ status: "online"
 
 
 /* =========================
-OTOROL
-========================= */
-
-const AUTO_ROLE_ID = "1470170975596314708";
-
-client.on("guildMemberAdd", async (member) => {
-try {
-const role = member.guild.roles.cache.get(AUTO_ROLE_ID);
-if (!role) return console.log("New User rolü bulunamadı.");
-
-await member.roles.add(role);
-console.log(`${member.user.tag} kullanıcısına New User rolü verildi.`);
-} catch (err) {
-console.error("Otorol hatası:", err);
-}
-});
-
-/* =========================
 AFK SİSTEM
 ========================= */
 
