@@ -39,12 +39,12 @@ LOG FONKSİYONLARI
 ========================= */
 
 function guardLog(guild, message) {
-const channel = guild.channels.cache.get(GUARD_LOG_CHANNEL);
+const channel = guild.channels.cache.get(imperium-guard);
 if (channel) channel.send(message);
 }
 
 function banLog(guild, message) {
-const channel = guild.channels.cache.get(BAN_LOG_CHANNEL);
+const channel = guild.channels.cache.get(ban-log);
 if (channel) channel.send(message);
 }
 
@@ -82,21 +82,26 @@ console.error("Otorol hatası:", err);
 AFK SİSTEM
 ========================= */
 
-const { joinVoiceChannel } = require("@discordjs/voice");
+const VOICE_CHANNEL_ID = "1470577913819697348";
 
-if (command === `${PREFIX}afk`) {
+client.once("ready", async () => {
+console.log(`Bot aktif: ${client.user.tag}`);
 
-if (!message.member.voice.channel)
-return message.reply("Önce bir ses kanalına gir.");
+const guild = client.guilds.cache.first();
+const channel = guild.channels.cache.get(VOICE_CHANNEL_ID);
+
+if (!channel) return console.log("Ses kanalı bulunamadı.");
 
 joinVoiceChannel({
-channelId: message.member.voice.channel.id,
-guildId: message.guild.id,
-adapterCreator: message.guild.voiceAdapterCreator,
+channelId: channel.id,
+guildId: guild.id,
+adapterCreator: guild.voiceAdapterCreator,
+selfDeaf: true,
 });
 
-message.reply("Bot AFK için sese girdi.");
-}
+console.log("Bot ses kanalına bağlandı.");
+});
+
 
 if (command === `${PREFIX}ban`) {
 if (!message.member.permissions.has(PermissionsBitField.Flags.BanMembers))
