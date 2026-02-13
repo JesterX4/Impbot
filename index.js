@@ -1,5 +1,5 @@
 require("dotenv").config();
-client.login(process.env.TOKEN);
+
 const {
 Client,
 GatewayIntentBits,
@@ -19,6 +19,8 @@ GatewayIntentBits.GuildBans
 ],
 partials: [Partials.GuildMember]
 });
+
+client.login(process.env.TOKEN);
 
 /* =========================
 BURAYI DOLDUR
