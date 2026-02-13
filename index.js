@@ -46,7 +46,7 @@ status: "online"
 const guild = client.guilds.cache.first();
 if (!guild) return;
 
-const channel = guild.channels.cache.get("SES_KANAL_ID"); // buraya ses kanal ID
+const channel = guild.channels.cache.get("1470577913819697348"); // buraya ses kanal ID
 
 if (!channel) {
 console.log("Ses kanalı bulunamadı.");
@@ -111,7 +111,7 @@ if (log) log.send(`👢 ${message.author.tag} → ${user.user.tag} kicklendi.`);
 }
 });
 
-/* ================= GUARD (KANAL DELETE LIMIT 3) ================= */
+/* ================= GUARD (KANAL DELETE LIMIT 1) ================= */
 
 const deleteLimit = new Map();
 
@@ -131,10 +131,7 @@ if (!member) return;
 if (executor.id === channel.guild.ownerId) return;
 if (member.roles.cache.some(r => r.name === SAFE_ROLE_NAME)) return;
 
-const count = deleteLimit.get(executor.id) || 0;
-deleteLimit.set(executor.id, count + 1);
-
-if (deleteLimit.get(executor.id) >= 3) {
+if (deleteLimit.get(executor.id) >= 1) {
 
 await member.ban({ reason: "3 Kanal Silme (Guard)" }).catch(() => {});
 
