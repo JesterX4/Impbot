@@ -64,32 +64,38 @@ status: "online"
 OTOROL
 ========================= */
 
-client.on("guildMemberAdd", member => {
+const AUTO_ROLE_ID = "1470170975596314708";
+
+client.on("guildMemberAdd", async (member) => {
+try {
 const role = member.guild.roles.cache.get(AUTO_ROLE_ID);
-if (role) member.roles.add(role).catch(() => {});
+if (!role) return console.log("New User rolü bulunamadı.");
+
+await member.roles.add(role);
+console.log(`${member.user.tag} kullanıcısına New User rolü verildi.`);
+} catch (err) {
+console.error("Otorol hatası:", err);
+}
 });
 
 /* =========================
 AFK SİSTEM
 ========================= */
 
-const afkUsers = new Map();
-
-client.on("messageCreate", message => {
-if (message.author.bot) return;
-
-if (afkUsers.has(message.author.id)) {
-afkUsers.delete(message.author.id);
-message.reply("AFK modundan çıktın.");
-}
-
-const args = message.content.split(" ");
-const command = args[0];
+const { joinVoiceChannel } = require("@discordjs/voice");
 
 if (command === `${PREFIX}afk`) {
-const reason = args.slice(1).join(" ") || "Sebep belirtilmedi";
-afkUsers.set(message.author.id, reason);
-message.reply(`AFK oldun: ${reason}`);
+
+if (!message.member.voice.channel)
+return message.reply("Önce bir ses kanalına gir.");
+
+joinVoiceChannel({
+channelId: message.member.voice.channel.id,
+guildId: message.guild.id,
+adapterCreator: message.guild.voiceAdapterCreator,
+});
+
+message.reply("Bot AFK için sese girdi.");
 }
 
 if (command === `${PREFIX}ban`) {
