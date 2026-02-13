@@ -23,18 +23,6 @@ partials: [Partials.GuildMember]
 client.login(process.env.TOKEN);
 
 /* =========================
-READY
-========================= */
-
-client.once("ready", () => {
-console.log(`Bot aktif: ${client.user.tag}`);
-client.user.setPresence({
-activities: [{ name: ".gg/İmperium" }],
-status: "online"
-});
-});
-
-/* =========================
 BURAYI DOLDUR
 ========================= */
 
@@ -59,6 +47,20 @@ function banLog(guild, message) {
 const channel = guild.channels.cache.get(ban-log);
 if (channel) channel.send(message);
 }
+
+/* =========================
+READY
+========================= */
+
+client.once("ready", () => {
+console.log(`Bot aktif: ${client.user.tag}`);
+client.user.setPresence({
+activities: [{ name: ".gg/İmperium" }],
+status: "online"
+});
+});
+
+
 /* =========================
 OTOROL
 ========================= */
