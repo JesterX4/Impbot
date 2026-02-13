@@ -8,6 +8,8 @@ PermissionsBitField,
 AuditLogEvent
 } = require("discord.js");
 
+const { joinVoiceChannel } = require("@discordjs/voice");
+
 const client = new Client({
 intents: [
 GatewayIntentBits.Guilds,
@@ -20,92 +22,84 @@ GatewayIntentBits.GuildBans
 partials: [Partials.GuildMember]
 });
 
-client.login(process.env.TOKEN);
-
-/* =========================
-BURAYI DOLDUR
-========================= */
+/* ================= CONFIG ================= */
 
 const PREFIX = "!imp";
 
 const GUARD_LOG_CHANNEL = "1471548872034750568";
-const BAN_LOG_CHANNEL = "1470173736010256505";
-
-const SAFE_ROLE_NAME = "Boss"; // Guarddan etkilenmeyecek rol
+const MOD_LOG_CHANNEL = "1470173736010256505";
+const VOICE_CHANNEL_ID = "1470577913819697348";
 const AUTO_ROLE_ID = "1470170975596314708";
 
-/* =========================
-LOG FONKSİYONLARI
-========================= */
+const SAFE_ROLE_ID = "1470171744156516462";
 
-function guardLog(guild, message) {
-const channel = guild.channels.cache.get(imperium-guard);
-if (channel) channel.send(message);
-}
-
-function banLog(guild, message) {
-const channel = guild.channels.cache.get(ban-log);
-if (channel) channel.send(message);
-}
-
-/* =========================
-READY
-========================= */
+/* ================= READY ================= */
 
 client.once("ready", () => {
-console.log(`Bot aktif: ${client.user.tag}`);
-client.user.setPresence({
-activities: [{ name: ".gg/İmperium" }],
-status: "online"
-});
-});
-
-
-/* =========================
-AFK SİSTEM
-========================= */
-
-const VOICE_CHANNEL_ID = "1470577913819697348";
-
-client.once("ready", async () => {
 console.log(`Bot aktif: ${client.user.tag}`);
 
 const guild = client.guilds.cache.first();
 const channel = guild.channels.cache.get(VOICE_CHANNEL_ID);
 
-if (!channel) return console.log("Ses kanalı bulunamadı.");
-
+if (channel) {
 joinVoiceChannel({
 channelId: channel.id,
 guildId: guild.id,
-adapterCreator: guild.voiceAdapterCreator,
-selfDeaf: true,
+adapterCreator: guild.voiceAdapterCreator
 });
-
-console.log("Bot ses kanalına bağlandı.");
-});
-
-if (command === `${PREFIX}ban`) {
-if (!message.member.permissions.has(PermissionsBitField.Flags.BanMembers))
-return message.reply("Ban yetkin yok.");
-
-const user =
-message.mentions.users.first() ||
-client.users.cache.get(args[1]);
-
-if (!user) return message.reply("Kullanıcı belirt.");
-
-message.guild.members.ban(user.id)
-.then(() => message.reply("Banlandı."))
-.catch(() => message.reply("Ban atılamadı."));
 }
 });
 
-/* =========================
-KANAL SİLME GUARD
-========================= */
+/* ================= OTOROL ================= */
 
-client.on("channelDelete", async (channel) => {
+client.on("guildMemberAdd", member => {
+const role = member.guild.roles.cache.get(AUTO_ROLE_ID);
+if (role) member.roles.add(role).catch(() => {});
+});
+
+/* ================= BAN & KICK KOMUT ================= */
+
+client.on("messageCreate", async message => {
+if (message.author.bot) return;
+if (!message.content.startsWith(PREFIX)) return;
+
+const args = message.content.split(" ");
+const command = args[0];
+
+if (command === `${PREFIX}ban`) {
+
+if (!message.member.permissions.has(PermissionsBitField.Flags.BanMembers))
+return message.reply("Yetkin yok.");
+
+const user = message.mentions.members.first();
+if (!user) return message.reply("Kullanıcı belirt.");
+
+await user.ban().catch(() => message.reply("Ban atılamadı."));
+
+const log = message.guild.channels.cache.get(MOD_LOG_CHANNEL);
+if (log) log.send(`🔨 ${message.author.tag} → ${user.user.tag} banlandı.`);
+}
+
+if (command === `${PREFIX}kick`) {
+
+if (!message.member.permissions.has(PermissionsBitField.Flags.KickMembers))
+return message.reply("Yetkin yok.");
+
+const user = message.mentions.members.first();
+if (!user) return message.reply("Kullanıcı belirt.");
+
+await user.kick().catch(() => message.reply("Kick atılamadı."));
+
+const log = message.guild.channels.cache.get(MOD_LOG_CHANNEL);
+if (log) log.send(`👢 ${message.author.tag} → ${user.user.tag} kicklendi.`);
+}
+});
+
+/* ================= GUARD (KANAL DELETE LIMIT 3) ================= */
+
+const deleteLimit = new Map();
+
+client.on("channelDelete", async channel => {
 
 const entry = await channel.guild.fetchAuditLogs({
 type: AuditLogEvent.ChannelDelete,
@@ -118,74 +112,23 @@ const executor = entry.executor;
 const member = await channel.guild.members.fetch(executor.id).catch(() => null);
 if (!member) return;
 
-if (executor.id === channel.guild.ownerId) {
-guardLog(channel.guild, `👑 Owner kanal sildi: ${executor.tag}`);
-return;
-}
+if (executor.id === channel.guild.ownerId) return;
+if (member.roles.cache.some(r => r.name === SAFE_ROLE_NAME)) return;
 
-if (member.roles.cache.some(r => r.name === SAFE_ROLE_NAME)) {
-guardLog(channel.guild, `🛡️ Whitelist rol kanal sildi: ${executor.tag}`);
-return;
-}
+const count = deleteLimit.get(executor.id) || 0;
+deleteLimit.set(executor.id, count + 1);
 
-if (!member.permissions.has(PermissionsBitField.Flags.ManageChannels)) {
-await member.ban({ reason: "Yetkisiz kanal silme" }).catch(() => {});
-guardLog(channel.guild, `🚨 ${executor.tag} yetkisiz kanal sildi ve banlandı.`);
-} else {
-guardLog(channel.guild, `⚠️ Yetkili kanal sildi: ${executor.tag}`);
-}
-});
+if (deleteLimit.get(executor.id) >= 3) {
 
-/* =========================
-ROL SİLME GUARD
-========================= */
+await member.ban({ reason: "3 Kanal Silme (Guard)" }).catch(() => {});
 
-client.on("roleDelete", async (role) => {
+const log = channel.guild.channels.cache.get(GUARD_LOG_CHANNEL);
+if (log) log.send(`🚨 ${executor.tag} 3 kanal sildi ve banlandı.`);
 
-const entry = await role.guild.fetchAuditLogs({
-type: AuditLogEvent.RoleDelete,
-limit: 1
-}).then(audit => audit.entries.first());
-
-if (!entry) return;
-
-const executor = entry.executor;
-const member = await role.guild.members.fetch(executor.id).catch(() => null);
-if (!member) return;
-
-if (executor.id === role.guild.ownerId) {
-guardLog(role.guild, `👑 Owner rol sildi: ${executor.tag}`);
-return;
-}
-
-if (member.roles.cache.some(r => r.name === SAFE_ROLE_NAME)) {
-guardLog(role.guild, `🛡️ Whitelist rol rol sildi: ${executor.tag}`);
-return;
-}
-
-if (!member.permissions.has(PermissionsBitField.Flags.ManageRoles)) {
-await member.ban({ reason: "Yetkisiz rol silme" }).catch(() => {});
-guardLog(role.guild, `🚨 ${executor.tag} yetkisiz rol sildi ve banlandı.`);
-} else {
-guardLog(role.guild, `⚠️ Yetkili rol sildi: ${executor.tag}`);
+deleteLimit.delete(executor.id);
 }
 });
 
-/* =========================
-BAN LOG AYRI
-========================= */
+/* ================= TOKEN ================= */
 
-client.on("guildBanAdd", async (ban) => {
-
-const entry = await ban.guild.fetchAuditLogs({
-type: AuditLogEvent.MemberBanAdd,
-limit: 1
-}).then(audit => audit.entries.first());
-
-if (!entry) return;
-
-const executor = entry.executor;
-banLog(ban.guild, `🔨 ${executor.tag} ban attı → ${ban.user.tag}`);
-});
-
-
+client.login(process.env.TOKEN);
