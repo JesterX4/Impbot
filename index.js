@@ -261,6 +261,6 @@ app.get("/", (req, res) => {
 res.send("Bot is alive!");
 });
 
-app.listen(process.env.PORT || 3000, () => {
-console.log("Web server running...");
+app.listen(process.env.PORT, "0.0.0.0", () => {
+console.log("Web server running on port:", process.env.PORT);
 });
