@@ -190,7 +190,7 @@ client.on('guildMemberRemove', (member) => {
 
 });
 
-const NICKNAME_LOG_KANALI_ID = '1470173867795288074'; // Ad dəyişmə log kanalının ID-si
+const NICKNAME_LOG_KANALI_ID = '1472977688212930743'; // Ad dəyişmə log kanalının ID-si
 
 client.on('guildMemberUpdate', (oldMember, newMember) => {
     // Kanalı yoxla
