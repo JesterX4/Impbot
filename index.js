@@ -21,17 +21,16 @@ GatewayIntentBits.GuildBans
 ],
 partials: [Partials.GuildMember]
 });
+gatewayint
 
 /* ================= CONFIG ================= */
 
-const PREFIX = "!imp";
+const PREFIX = "!";
 
-const GUARD_LOG_CHANNEL = "1471548872034750568";
-const MOD_LOG_CHANNEL = "1470173736010256505";
-const VOICE_CHANNEL_ID = "1470577913819697348";
-const AUTO_ROLE_ID = "1470170975596314708";
+const MOD_LOG_CHANNEL = "1476710644840661073";
+const VOICE_CHANNEL_ID = "1474885488379953337";
+const AUTO_ROLE_ID = "1476254250165211220";
 
-const SAFE_ROLE_ID = "1470171744156516462";
 
 /* ================= READY ================= */
 
@@ -39,7 +38,7 @@ client.once("ready", async () => {
 console.log(`Bot aktif: ${client.user.tag}`);
 
 client.user.setPresence({
-activities: [{ name: ".gg/İmperium" }],
+activities: [{ name: ".gg/MontanaRP" }],
 status: "online"
 });
 
@@ -111,136 +110,7 @@ if (log) log.send(`👢 ${message.author.tag} → ${user.user.tag} kicklendi.`);
 }
 });
 
-/* ================= GUARD (KANAL DELETE LIMIT 1) ================= */
 
-const deleteLimit = new Map();
-
-client.on("channelDelete", async channel => {
-
-const entry = await channel.guild.fetchAuditLogs({
-type: AuditLogEvent.ChannelDelete,
-limit: 1
-}).then(audit => audit.entries.first());
-
-if (!entry) return;
-
-const executor = entry.executor;
-const member = await channel.guild.members.fetch(executor.id).catch(() => null);
-if (!member) return;
-
-if (executor.id === channel.guild.ownerId) return;
-if (member.roles.cache.some(r => r.name === SAFE_ROLE_NAME)) return;
-
-if (deleteLimit.get(executor.id) >= 1) {
-
-await member.ban({ reason: "3 Kanal Silme (Guard)" }).catch(() => {});
-
-const log = channel.guild.channels.cache.get(GUARD_LOG_CHANNEL);
-if (log) log.send(`🚨 ${executor.tag} 3 kanal sildi ve banlandı.`);
-
-deleteLimit.delete(executor.id);
-}
-});
-
-/* ================= LOG KANALLARI ============ */
-
-const { EmbedBuilder } = require('discord.js');
-
-// --- AYARLAR ---
-const GİRİŞ_KANALI_ID = '1472966655553306674'; // Giriş log kanalının ID-sini bura yaz
-const ÇIXIŞ_KANALI_ID = '1472966592722894980'; // Çıxış log kanalının ID-sini bura yaz
-// ---------------
-
-// Biri serverə girəndə (Giriş Log)
-client.on('guildMemberAdd', (member) => {
-    const channel = member.guild.channels.cache.get(GİRİŞ_KANALI_ID);
-    if (!channel) return;
-
-    const welcomeEmbed = new EmbedBuilder()
-        .setColor('#00FF00') // Yaşıl rəng
-        .setTitle('📥 Serverə Giriş Edildi')
-        .setThumbnail(member.user.displayAvatarURL({ dynamic: true, size: 512 }))
-        .addFields(
-            { name: 'Nickname:', value: `${member.user.tag}`, inline: false },
-            { name: 'İstifadəçi ID:', value: `${member.id}`, inline: false }
-        )
-        .setFooter({ text: 'Xoş gəldin!' })
-        .setTimestamp();
-
-    channel.send({ embeds: [welcomeEmbed] });
-});
-
-// Biri serverdən çıxanda (Çıxış Log)
-client.on('guildMemberRemove', (member) => {
-    const channel = member.guild.channels.cache.get(ÇIXIŞ_KANALI_ID);
-    if (!channel) return;
-
-    const leaveEmbed = new EmbedBuilder()
-        .setColor('#FF0000') // Qırmızı rəng
-        .setTitle('📤 Serverdən Çıxış Edildi')
-        .setThumbnail(member.user.displayAvatarURL({ dynamic: true, size: 512 }))
-        .addFields(
-            { name: 'Nickname:', value: `${member.user.tag}`, inline: false },
-            { name: 'İstifadəçi ID:', value: `${member.id}`, inline: false }
-        )
-        .setFooter({ text: 'Xoş Getdin.' })
-        .setTimestamp();
-
-    channel.send({ embeds: [leaveEmbed] });
-
-});
-
-const NICKNAME_LOG_KANALI_ID = '1472977688212930743'; // Ad dəyişmə log kanalının ID-si
-
-client.on('guildMemberUpdate', (oldMember, newMember) => {
-    // Kanalı yoxla
-    const channel = newMember.guild.channels.cache.get(NICKNAME_LOG_KANALI_ID);
-    if (!channel) return;
-
-    // Əgər server daxili ləqəb (Nickname) dəyişibsə
-    if (oldMember.nickname !== newMember.nickname) {
-        const oldNick = oldMember.nickname || oldMember.user.username;
-        const newNick = newMember.nickname || newMember.user.username;
-
-        const nickEmbed = new EmbedBuilder()
-            .setColor('#FFA500') // Narıncı rəng
-            .setTitle('📝 Ləqəb Dəyişdirildi')
-            .setThumbnail(newMember.user.displayAvatarURL({ dynamic: true }))
-            .addFields(
-                { name: 'Köhnə Ləqəb:', value: `\`${oldNick}\``, inline: true },
-                { name: 'Yeni Ləqəb:', value: `\`${newNick}\``, inline: true },
-                { name: 'İstifadəçi ID:', value: `${newMember.id}`, inline: false }
-            )
-            .setTimestamp()
-            .setFooter({ text: newMember.user.tag });
-
-        channel.send({ embeds: [nickEmbed] });
-    }
-});
-
-// Əgər istifadəçi ümumi Discord adını (Username) dəyişibsə
-client.on('userUpdate', (oldUser, newUser) => {
-    if (oldUser.username !== newUser.username) {
-        // Botun olduğu bütün serverləri yoxlayır ki, log kanalını tapsın
-        client.guilds.cache.forEach(guild => {
-            const channel = guild.channels.cache.get(NICKNAME_LOG_KANALI_ID);
-            if (!channel) return;
-
-            const userUpdateEmbed = new EmbedBuilder()
-                .setColor('#3498db') // Mavi rəng
-                .setTitle('👤 İstifadəçi Adı Dəyişdi')
-                .setThumbnail(newUser.displayAvatarURL({ dynamic: true }))
-                .addFields(
-                    { name: 'Köhnə Ad:', value: `\`${oldUser.tag}\``, inline: true },
-                    { name: 'Yeni Ad:', value: `\`${newUser.tag}\``, inline: true },
-                    { name: 'İstifadəçi ID:', value: `${newUser.id}`, inline: false }
-                )
-                .setTimestamp();
-
-            channel.send({ embeds: [userUpdateEmbed] });
-        });
-    }
-});
 
 /* ================= TOKEN ================= */
 
